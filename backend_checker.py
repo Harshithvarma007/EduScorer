@@ -1,7 +1,14 @@
 import openai
+from dotenv import load_dotenv
+import os
 
+# Load the environment variables from the .env file
+load_dotenv()
+
+# Access the API key
+api_key = os.getenv("API_KEY")
 def check_answer(Teachers_solution, Students_answer, Max_marks, Question):
-    openai.api_key = "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"
+    openai.api_key = api_key
     # openai.api_key = api_key_input
     # try:
     print("sending to gpt3")
