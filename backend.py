@@ -56,7 +56,7 @@ def check_answer(Teachers_solution, Students_answer, Max_marks, Question):
 - Explaination: If the student's answer doesnt contain the explaination of the answer that is there in the teachers answer deduct 0.5 marks.
 You should consider all evaluation criteria and allocate marks based on the provided guidelines and just return the total marks allocated out of max marks.
 
-YOU HAVE TO GIVE THE RESPONSE IN THIS FORMAT : {{ "marks": int,"explaination": string,"accuracy": string,completeness: "string",relevance: "string",clarity: "string" }} make sure you follow the format
+YOU HAVE TO GIVE THE RESPONSE IN THIS FORMAT : {{ "marks": int,"explaination": string,"accuracy": string,"completeness":int(marks) ,"relevance": int,"clarity": int }} make sure you follow the format and give just integer values where asked and string where asked  
 '''
     }
 ],
