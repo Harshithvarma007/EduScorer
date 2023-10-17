@@ -3,39 +3,51 @@ from tkinter import Text, Label, Entry,scrolledtext
 from backend import check_answer
 from tkinter import filedialog
 import xlwt
+import xlrd
+from xlutils.copy import copy
+import os
 def create_gui():
-    
     def export_to_excel():
-        # Get the values from the Entry widgets
+        # Get the values from the GUI
+        teacher_solution = teacher_solution_text.get("1.0", "end-1c")
+        student_answer = student_answer_text.get("1.0", "end-1c")
         marks = marks_entry.get()
         accuracy = accuracy_entry.get()
         completeness = completeness_entry.get()
         relevance = relevance_entry.get()
         clarity = clarity_entry.get()
 
-        # Get the explanation
-        explanation = explanation_text.get("1.0", "end-1c")
+        # Specify the Excel file to append to
+        excel_file = 'evaluation_data.xls'
 
-        # Create a new workbook and add a worksheet
-        workbook = xlwt.Workbook()
-        worksheet = workbook.add_sheet("Results")
+        # Check if the file exists or not
+        if not os.path.exists(excel_file):
+            # If the file doesn't exist, create it with headers
+            workbook = xlwt.Workbook()
+            worksheet = workbook.add_sheet('Sheet1')
+            headers = ["Teacher Solution", "Student Answer", "Marks", "Accuracy", "Completeness", "Relevance", "Clarity"]
+            for col, header in enumerate(headers):
+                worksheet.write(0, col, header)
+            workbook.save(excel_file)
 
-        # Define the column headers
-        headers = ["Marks", "Accuracy", "Completeness", "Relevance", "Clarity", "Explanation"]
+        # Open the existing Excel file for appending
+        existing_workbook = xlrd.open_workbook(excel_file, formatting_info=True)
+        new_workbook = copy(existing_workbook)
+        worksheet = new_workbook.get_sheet(0)
 
-        # Write the headers to the worksheet
-        for col, header in enumerate(headers):
-            worksheet.write(0, col, header)
+        # Get the number of existing rows in the Excel file
+        existing_rows = existing_workbook.sheet_by_index(0).nrows
 
-        # Write the data to the worksheet
-        data = [marks, accuracy, completeness, relevance, clarity, explanation]
-        for col, value in enumerate(data):
-            worksheet.write(1, col, value)
-
-        # Save the Excel file
-        workbook.save("evaluation_results.xls")
-
-        print("Data exported to evaluation_results.xls")
+        # Append the new data to the next row
+        worksheet.write(existing_rows, 0, teacher_solution)
+        worksheet.write(existing_rows, 1, student_answer)
+        worksheet.write(existing_rows, 2, marks)
+        worksheet.write(existing_rows, 3, accuracy)
+        worksheet.write(existing_rows, 4, completeness)
+        worksheet.write(existing_rows, 5, relevance)
+        worksheet.write(existing_rows, 6, clarity)
+        new_workbook.save(excel_file)
+        print("Data saved to Excel file")
     def clear_evaluation_entries():
         # Clear the Entry widgets
         explanation_text.delete("1.0", "end")
