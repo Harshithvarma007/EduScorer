@@ -7,6 +7,9 @@ load_dotenv()
 
 # Access the API key
 api_key = os.getenv("API_KEY")
+
+openai.api_key = api_key
+
 def check_answer(Teachers_solution, Students_answer, Max_marks, Question):
     openai.api_key = api_key
     # openai.api_key = api_key_input
@@ -68,5 +71,6 @@ YOU HAVE TO GIVE THE RESPONSE IN THIS FORMAT : {{ "marks": int,"explaination": s
 
     return final_html
 
-question="Describe the causes and consequences of the Industrial Revolution in the 19th century."
-print( check_answer(open('teachers_solution.txt', 'r').read(),open('students_answer.txt','r').read(), 10, question))
+
+
+
