@@ -2,8 +2,40 @@ import tkinter as tk
 from tkinter import Text, Label, Entry,scrolledtext
 from backend import check_answer
 from tkinter import filedialog
-
+import xlwt
 def create_gui():
+    
+    def export_to_excel():
+        # Get the values from the Entry widgets
+        marks = marks_entry.get()
+        accuracy = accuracy_entry.get()
+        completeness = completeness_entry.get()
+        relevance = relevance_entry.get()
+        clarity = clarity_entry.get()
+
+        # Get the explanation
+        explanation = explanation_text.get("1.0", "end-1c")
+
+        # Create a new workbook and add a worksheet
+        workbook = xlwt.Workbook()
+        worksheet = workbook.add_sheet("Results")
+
+        # Define the column headers
+        headers = ["Marks", "Accuracy", "Completeness", "Relevance", "Clarity", "Explanation"]
+
+        # Write the headers to the worksheet
+        for col, header in enumerate(headers):
+            worksheet.write(0, col, header)
+
+        # Write the data to the worksheet
+        data = [marks, accuracy, completeness, relevance, clarity, explanation]
+        for col, value in enumerate(data):
+            worksheet.write(1, col, value)
+
+        # Save the Excel file
+        workbook.save("evaluation_results.xls")
+
+        print("Data exported to evaluation_results.xls")
     def clear_evaluation_entries():
         # Clear the Entry widgets
         explanation_text.delete("1.0", "end")
@@ -152,7 +184,7 @@ def create_gui():
     check_button = tk.Button(root, text="Check", command=evaluate_answer)
     check_button.grid(row=2, column=3, padx=15, pady=10, sticky="sw")  
 
-    submit_button = tk.Button(root, text="Submit")
+    submit_button = tk.Button(root, text="Submit",command=export_to_excel)
     submit_button.grid(row=2, column=4, padx=10, pady=10, sticky="se")  
 
 
