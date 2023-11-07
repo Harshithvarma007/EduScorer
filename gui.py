@@ -4,9 +4,100 @@ from backend import check_answer
 from tkinter import filedialog
 import xlwt
 import xlrd
+import pymysql
 from xlutils.copy import copy
 import os
+from decouple import Config, Csv
+
+# Create a Config object and specify the location of your .env file
+config = Config('.env')
+DB_USER = config('DB_USER')
+DB_PASSWORD = config('DB_PASSWORD')
+DB_HOST = config('DB_HOST')
+DB_NAME = config('DB_NAME')
+
 def create_gui():
+    def enter_answer_data():
+        # Get the data from the GUI
+        question_id = 1  # Replace with the actual question ID
+        student_id = 1  # Replace with the actual student ID
+        teacher_id = 1  # Replace with the actual teacher ID
+        answer_text = student_answer_text.get("1.0", "end-1c")
+        solution = teacher_solution_text.get("1.0", "end-1c")
+        explanation = explanation_text.get("1.0", "end-1c")
+        marks = marks_entry.get()
+        accuracy = accuracy_entry.get()
+        completeness = completeness_entry.get()
+        length = length_entry.get()
+        relevance = relevance_entry.get()
+        clarity = clarity_entry.get()
+        evaluation_comment = evaluation_comment_entry.get()
+
+        try:
+            db_config = {
+                'user': DB_USER,
+                'password': DB_PASSWORD,
+                'host': DB_HOST,
+                'database': DB_NAME,
+            }
+            conn = pymysql.connect(**db_config)
+            cursor = conn.cursor()
+
+            # Create a dictionary with the data to be inserted
+            data = {
+                'question_id': question_id,
+                'student_id': student_id,
+                'teacher_id': teacher_id,
+                'answer_text': answer_text,
+                'solution': solution,
+                'explanation': explanation,
+                'marks': marks,
+                'accuracy': accuracy,
+                'completeness': completeness,
+                'length': length,
+                'relevance': relevance,
+                'clarity': clarity,
+                'evaluation_comment': evaluation_comment
+            }
+
+            # Insert data into the evaluation table
+            insert_query = """
+                INSERT INTO evaluation (question_id, student_id, teacher_id, marks, accuracy, completeness, length, relevance, clarity, evaluation_comment)
+                VALUES (%(question_id)s, %(student_id)s, %(teacher_id)s, %(marks)s, %(accuracy)s, %(completeness)s, %(length)s, %(relevance)s, %(clarity)s, %(evaluation_comment)s)
+            """
+
+            cursor.execute(insert_query, data)
+
+            # Retrieve the auto-generated evaluation_id from the inserted row
+            evaluation_id = cursor.lastrowid
+
+            # Now, insert a record into the answers table with the evaluation_id
+            answer_data = {
+                'evaluation_id': evaluation_id,
+                'answer_text': answer_text,
+                'solution': solution,
+                'explanation': explanation,
+            }
+
+            answer_query = """
+                INSERT INTO answers (evaluation_id, answer_text, solution, explanation)
+                VALUES (%(evaluation_id)s, %(answer_text)s, %(solution)s, %(explanation)s)
+            """
+
+            cursor.execute(answer_query, answer_data)
+
+            conn.commit()
+            print("Data inserted successfully!")
+
+        except pymysql.Error as error:
+            print(f"Error: {error}")
+
+        finally:
+            if conn.open:
+                cursor.close()
+                conn.close()
+
+
     def export_to_excel():
         # Get the values from the GUI
         teacher_solution = teacher_solution_text.get("1.0", "end-1c")
@@ -16,38 +107,45 @@ def create_gui():
         completeness = completeness_entry.get()
         relevance = relevance_entry.get()
         clarity = clarity_entry.get()
+        explanation = explanation_text.get("1.0", "end-1c")  # Get explanation text
 
-        # Specify the Excel file to append to
-        excel_file = 'evaluation_data.xls'
+        
 
-        # Check if the file exists or not
-        if not os.path.exists(excel_file):
-            # If the file doesn't exist, create it with headers
-            workbook = xlwt.Workbook()
-            worksheet = workbook.add_sheet('Sheet1')
-            headers = ["Teacher Solution", "Student Answer", "Marks", "Accuracy", "Completeness", "Relevance", "Clarity"]
-            for col, header in enumerate(headers):
-                worksheet.write(0, col, header)
-            workbook.save(excel_file)
+        # # Specify the Excel file to append to
+        # excel_file = 'evaluation_data.xls'
 
-        # Open the existing Excel file for appending
-        existing_workbook = xlrd.open_workbook(excel_file, formatting_info=True)
-        new_workbook = copy(existing_workbook)
-        worksheet = new_workbook.get_sheet(0)
+        # # Check if the file exists or not
+        # if not os.path.exists(excel_file):
+        #     # If the file doesn't exist, create it with headers
+        #     workbook = xlwt.Workbook()
+        #     worksheet = workbook.add_sheet('Sheet1')
+        #     headers = ["Teacher Solution", "Student Answer", "Marks", "Accuracy", "Completeness", "Relevance", "Clarity", "Explanation"]
+        #     for col, header in enumerate(headers):
+        #         worksheet.write(0, col, header)
+        #     workbook.save(excel_file)
 
-        # Get the number of existing rows in the Excel file
-        existing_rows = existing_workbook.sheet_by_index(0).nrows
+        # # Open the existing Excel file for appending
+        # existing_workbook = xlrd.open_workbook(excel_file, formatting_info=True)
+        # new_workbook = copy(existing_workbook)
+        # worksheet = new_workbook.get_sheet(0)
 
-        # Append the new data to the next row
-        worksheet.write(existing_rows, 0, teacher_solution)
-        worksheet.write(existing_rows, 1, student_answer)
-        worksheet.write(existing_rows, 2, marks)
-        worksheet.write(existing_rows, 3, accuracy)
-        worksheet.write(existing_rows, 4, completeness)
-        worksheet.write(existing_rows, 5, relevance)
-        worksheet.write(existing_rows, 6, clarity)
-        new_workbook.save(excel_file)
-        print("Data saved to Excel file")
+        # # Get the number of existing rows in the Excel file
+        # existing_rows = existing_workbook.sheet_by_index(0).nrows
+
+        # # Append the new data to the next row, including explanation
+        # worksheet.write(existing_rows, 0, teacher_solution)
+        # worksheet.write(existing_rows, 1, student_answer)
+        # worksheet.write(existing_rows, 2, marks)
+        # worksheet.write(existing_rows, 3, accuracy)
+        # worksheet.write(existing_rows, 4, completeness)
+        # worksheet.write(existing_rows, 5, relevance)
+        # worksheet.write(existing_rows, 6, clarity)
+        # worksheet.write(existing_rows, 7, explanation)  # Write explanation
+            # new_workbook.save(excel_file)
+            # print("Data saved to Excel file")
+            
+        
+
     def clear_evaluation_entries():
         # Clear the Entry widgets
         explanation_text.delete("1.0", "end")
@@ -83,12 +181,18 @@ def create_gui():
 
         completeness_entry.delete(0, "end")
         completeness_entry.insert(0, result_dict.get("completeness"))
+        
+        length_entry.delete(0, "end")
+        length_entry.insert(0, result_dict.get("length"))
 
         relevance_entry.delete(0, "end")
         relevance_entry.insert(0, result_dict.get("relevance"))
 
         clarity_entry.delete(0, "end")
         clarity_entry.insert(0, result_dict.get("clarity"))
+        
+        explanation_text    .delete(0, "end")
+        explanation_text.insert(0, result_dict.get("clarity"))
 
 
     def open_teacher_solution_file():
@@ -120,11 +224,11 @@ def create_gui():
     teacher_solution_label = tk.Label(teacher_solution_frame, text="Teacher's Solution")
     teacher_solution_label.grid(row=0, column=0, padx=10, pady=(0, 10))
 
-    teacher_solution_text = Text(teacher_solution_frame, wrap=tk.WORD, height=40, width=50)
+    teacher_solution_text = Text(teacher_solution_frame, wrap=tk.WORD, height=45, width=50)
     teacher_solution_text.grid(row=1, column=0, padx=10, pady=(0, 10))
 
     teacher_solution_button = tk.Button(teacher_solution_frame, text="Open from File", command=open_teacher_solution_file)
-    teacher_solution_button.grid(row=2, column=0, padx=10, pady=(0, 10))
+    teacher_solution_button.grid(row=8, column=0, padx=10, pady=(0, 10))
 
     
     student_answer_frame = tk.Frame(root)
@@ -135,11 +239,11 @@ def create_gui():
     student_answer_label = tk.Label(student_answer_frame, text="Student's Answer")
     student_answer_label.grid(row=0, column=0, padx=10, pady=(0, 10))
 
-    student_answer_text = Text(student_answer_frame, wrap=tk.WORD, height=40, width=50)
+    student_answer_text = Text(student_answer_frame, wrap=tk.WORD, height=45, width=50)
     student_answer_text.grid(row=1, column=0, padx=10, pady=(0, 10))
 
     student_answer_button = tk.Button(student_answer_frame, text="Open from File", command=open_student_answer_file)
-    student_answer_button.grid(row=2, column=0, padx=10, pady=(0, 10))
+    student_answer_button.grid(row=8, column=0, padx=10, pady=(0, 10))
 
     evaluation_frame = tk.Frame(root)
     evaluation_frame.grid(row=0, column=2, padx=10, pady=10, sticky="nsew")
@@ -174,6 +278,12 @@ def create_gui():
     completeness_entry = Entry(evaluation_frame,width=50)
     completeness_entry.grid(row=row, column=1, padx=10, pady=(0, 10))
     row += 1
+    
+    length_label = Label(evaluation_frame, text="Length:")
+    length_label.grid(row=row, column=0, padx=40, pady=(0, 10))
+    length_entry = Entry(evaluation_frame,width=50)
+    length_entry.grid(row=row, column=1, padx=10, pady=(0, 10))
+    row += 1
 
     relevance_label = Label(evaluation_frame, text="Relevance:")
     relevance_label.grid(row=row, column=0, padx=40, pady=(0, 10))
@@ -185,8 +295,12 @@ def create_gui():
     clarity_label.grid(row=row, column=0, padx=40, pady=(0, 10))
     clarity_entry = Entry(evaluation_frame,width=50)
     clarity_entry.grid(row=row, column=1, padx=10, pady=(0, 10))
-
-
+    row += 1
+    
+    evaluation_comment_label = Label(evaluation_frame, text="Explaition Comment:")
+    evaluation_comment_label.grid(row=row, column=0, padx=40, pady=(0, 10))
+    evaluation_comment_entry = Entry(evaluation_frame,width=50)
+    evaluation_comment_entry.grid(row=row, column=1, padx=10, pady=(0, 10))
 
     next_button = tk.Button(root, text="Next")
     next_button.grid(row=2, column=0, padx=10, pady=10, sticky="sw")  
@@ -196,7 +310,7 @@ def create_gui():
     check_button = tk.Button(root, text="Check", command=evaluate_answer)
     check_button.grid(row=2, column=3, padx=15, pady=10, sticky="sw")  
 
-    submit_button = tk.Button(root, text="Submit",command=export_to_excel)
+    submit_button = tk.Button(root, text="Submit",command=enter_answer_data)
     submit_button.grid(row=2, column=4, padx=10, pady=10, sticky="se")  
 
 
